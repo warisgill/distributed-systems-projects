@@ -121,7 +121,7 @@ class Server:
             self.broadcast(username, buffer)
         else:
             client_socket.sendall(bytes("Rejected" + ts, 'utf-8'))
-            return self.registerNewUser(client_socket)
+            flag, username = self.registerNewUser(client_socket)
 
         return (True, username)
 
