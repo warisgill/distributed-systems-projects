@@ -64,8 +64,8 @@ class Server:
 
         if flag:
             while True:
-                buffer = client_socket.recv(self.buffsize)
 
+                buffer = client_socket.recv(self.buffsize)
                 if len(buffer) == 0:
                     print(">> Force Exit.")
                     with self.lock_clients:
