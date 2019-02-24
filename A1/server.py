@@ -191,7 +191,7 @@ class Server:
         return temp
 
 if __name__ == "__main__":
-    IP = "localhost"
+    IP = "" # python differentiate between  local and public
     port = 4444
     server = Server(IP, port)
     server.listen()
