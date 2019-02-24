@@ -10,7 +10,7 @@ class Server:
         Args:    
            ip:  IP of the server
            port: Port of the server at which it will start listening
-             
+
         """
         self.ip = ip
         self.port = port
@@ -53,11 +53,11 @@ class Server:
         """
         This method is passed to the new thread created on each incoming connection and it will
         with all kind of client server interaction.
-        
+
         Args:    
             client_socket: It's the client socket which is just connected.
             client_addr: It's the tuple which contains client connection info.   
-             
+
         """
         flag, username = self.registerNewUser(client_socket)
         quit_condition = "{u} quit".format(u=username)
@@ -91,12 +91,11 @@ class Server:
     def registerNewUser(self, client_socket):
         """
             This method handles all the interactions of new client registeratins.
-        Args:    
+        Args:
             client_socket: Client socket who wants to register. 
-        
-        Returns: 
+
+        Returns:
             returns True after the successful completeion of events.
-             
         """
         buffer = client_socket.recv(self.buffsize)
 
@@ -122,7 +121,7 @@ class Server:
             self.broadcast(username, buffer)
         else:
             client_socket.sendall(bytes("Rejected" + ts, 'utf-8'))
-            self.registerNewUser(client_socket)
+            return self.registerNewUser(client_socket)
 
         return (True, username)
 
@@ -151,7 +150,7 @@ class Server:
         Args:    
             username: This is client username of type string.
             buffer: buffer of type string to transmit. 
-             
+
         """
         for key in self.clients.keys():
             self.incrementTimeStamp(self.timestamp)
@@ -166,7 +165,7 @@ class Server:
         This method will extract the timestamp from message and returns it as integer.
         Args:
             message: Its the message of type string.
-        
+
         Returns: 
             It will return the timestamp of type int.
         """
@@ -177,10 +176,10 @@ class Server:
     def incrementTimeStamp(self, timestamp):
         """
         This method is used to increment the timestamp according to lamport's algorithm.
-        
+
         Args:    
             timestamp: timestamp to comapare.
-        
+
         Returns: 
             updated timestamp 
         """
@@ -190,8 +189,9 @@ class Server:
             temp = self.timestamp
         return temp
 
+
 if __name__ == "__main__":
-    IP = "" # python differentiate between  local and public
+    IP = ""  # python differentiate between  local and public
     port = 4444
     server = Server(IP, port)
     server.listen()
