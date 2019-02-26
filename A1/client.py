@@ -1,13 +1,14 @@
 import sys
 import socket
 import threading
+from random import *
 
 
 class Client:
     def __init__(self, server_ip, port):
         """
         This is the constructor of the client class. 
-        
+
         Args:
             server_ip: The IP of the server which you want to connect. 
             port:  Port Number of the server 
@@ -17,7 +18,7 @@ class Client:
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         self.buffsize = 1024
-        self.timestamp = 0
+        self.timestamp = randint(0, 101)
         self.quit = False
         self.username = ""
         self.lock_timestamp = threading.Lock()
@@ -28,7 +29,7 @@ class Client:
         """ 
             This method is used to connect to the server. It also create a new thread for user input
             and handle all events on client side. 
-        """   
+        """
         print("Local Timestamp: ", self.timestamp)
         self.timestamp += 1
         self.client_socket.connect((self.server_ip, self.server_port))
@@ -88,7 +89,7 @@ class Client:
         """
         This message is passed to the thread which is created in the connect() and 
         it handle the user interaction
-        """   
+        """
         while True:
             buffer = input("",)
             check = buffer
@@ -106,15 +107,15 @@ class Client:
     def incrementTimeStamp(self, timestamp):
         """
         This method is used to increment the timestamp according to lamport's algorithm.
-        
+
         Args:    
             timestamp: timestamp to comapare.
-        
+
         Returns: 
             updated timestamp 
-        """   
+        """
         temp = 0
-        
+
         with self.lock_timestamp:
             self.timestamp = max(self.timestamp, timestamp) + 1
             temp = self.timestamp
@@ -122,15 +123,14 @@ class Client:
         return temp
 
     def getTimeStamp(self, message):
-        
         """
         This method will extract the timestamp from message and returns it as integer.
         Args:
             message: Its the message of type string.
-        
+
         Returns: 
             It will return the timestamp of type int.
-        """   
+        """
         message = message.split('<')[1]
         message = message.split('>')[0]
         return int(message)
