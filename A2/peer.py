@@ -127,8 +127,8 @@ def handleClient(server_peer,neighbour_uris,h_ip,h_port):
         
 
 def main1():
-    HOST_IP,HOST_PORT,peers = getNeighboursURI("ip.txt")
     SERVER_PEER = Peer()
+    HOST_IP,HOST_PORT,peers = getNeighboursURI("ip.txt",SERVER_PEER)
     args_tuple = (SERVER_PEER,peers,HOST_IP,HOST_PORT)
     t = threading.Thread(target=handleClient, args=args_tuple)
     t.start()
