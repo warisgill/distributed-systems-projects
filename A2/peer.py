@@ -38,11 +38,49 @@ class Peer(object):
 
     # neighbs will call this method to send me the message
     def postMessage(self,message,vs,ids):
-        print(">{0}".format(message))
+        if self.checkRecv(vs,self.vector_timestamp,ids):
+            
+            with self.v_lock:
+                self.vector_timestamp = vs            
+            
+            print(">{0},<{1}>,<{2}>".format(message,self.vector_timestamp,ids))
+            self.updateBuffer()
+        else:
+            print("<Debug buffered: {0},{1},{2}>".format(message,vs,ids))
+            self.buffer.append((message,vs,ids))
 
     def incrementTimeStamp(self):
         with self.v_lock:
             self.vector_timestamp[self.id] += 1
+
+    def updateBuffer(self): # vr means here your own timestamp
+        temp_buffer = []
+        for i in range(0, len(self.buffer)):
+            message,vs,ids = self.buffer[i]
+            if self.checkRecv(vs,self.vector_timestamp,ids):
+                with self.v_lock:
+                    self.vector_timestamp = vs            
+                print(">Was Buffered:{0},<{1}>,<{2}>".format(message,self.vector_timestamp,ids))
+            else:
+                temp_buffer.append((message,vs,ids))
+
+        self.buffer = temp_buffer
+        print("<Debug: Updated Buffer>", self.buffer)
+
+
+    def checkRecv(self, vs, vr, ids):
+        def compare(vs,vr,id):
+            for i in range(0,len(vr)):
+                if i != id:
+                    if vs[i] > vr[i]:
+                        return False
+
+            return True  
+
+        if vr[ids]+1 == vs[ids] and compare(vs,vr,ids):
+            return True
+        else:
+            return False
 
    # ============================== Client Handling ==================
 def getNeighboursURI(fname):  
@@ -63,12 +101,12 @@ def getNeighboursURI(fname):
     return (ip,port,peers_list)
 
 def broadCast(server_peer,m,peers,ip,port):
-    server_peer.incrementTimeStamp()
+    server_peer.incrementTimeStamp() # increment timestap by one before broadcast
     for peer in peers:
         m = "{0}/{1} says: {2}".format(ip,port,m)
         peer.postMessage(m,server_peer.vector_timestamp,server_peer.id)
 
-    server_peer.updateBuffer(server_peer.vectortimestamp)
+    server_peer.updateBuffer()
 
 def handleClient(server_peer,neighbour_uris,h_ip,h_port):
     FLAG = False
