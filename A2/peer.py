@@ -83,7 +83,7 @@ class Peer(object):
             return False
 
    # ============================== Client Handling ==================
-def getNeighboursURI(fname):  
+def getNeighboursURI(fname,server_peer):  
     content = []
     peers_list = [] 
     ip = socket.gethostbyname(socket.gethostname())
@@ -92,12 +92,15 @@ def getNeighboursURI(fname):
         content = f.readlines()
     
     content = [x.strip() for x in content]
-    
+    i = 0
     for addr in content:
+        server_peer.vector_timestamp.append(0)
         if ip in addr:
+           server_peer.id = i 
            port = int(addr.split(":")[1])
            continue
         peers_list.append("PYRO:peer@"+addr)
+        i += 1
     return (ip,port,peers_list)
 
 def broadCast(server_peer,m,peers,ip,port):
