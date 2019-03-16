@@ -3,9 +3,9 @@ import Pyro4
 import threading
 import socket
 
-socket.gethostbyname(socket.gethostname())
-HOST_IP = "127.0.0.1"    # Set accordingly (i.e. "192.168.1.99")
-HOST_PORT = 9001         # Set accordingly (i.e. 9876)
+#temp_ip = socket.gethostbyname(socket.gethostname())
+HOST_IP = None  # Set accordingly (i.e. "192.168.1.99")
+HOST_PORT = None         # Set accordingly (i.e. 9876)
 
 
 # print(Pyro4.socketutil.getIpAddress())
@@ -45,14 +45,20 @@ class Peer(object):
 # ============================== Client Handling ==================
 def getNeighboursURI(fname):  
     content = []
+    peers_list = [] 
+    ip = socket.gethostbyname(socket.gethostname())
+    port = None
     with open(fname) as f:
         content = f.readlines()
-    # you may also want to remove whitespace characters like `\n` at the end of each line
-    addr_list = [x.strip() for x in content]
-    peers_list = [] 
-    for addr in addr_list:
+    
+    content = [x.strip() for x in content]
+    
+    for addr in content:
+        if ip in addr:
+           port = addr.split(":")[1]
+           continue
         peers_list.append("PYRO:peer@{0}".format(addr))
-    return peers_list
+    return (ip,port,peers_list)
 
 def broadCast(m,peers):
     for peer in peers:
@@ -72,9 +78,10 @@ def handleClient(PEER,neighbour_uris):
         broadCast(m,neig_peers)
         
 
-def main1(): 
+def main1():
+    HOST_IP,HOST_PORT,peers = getNeighboursURI("ip.txt")
     SERVER_PEER = Peer()
-    args_tuple = (SERVER_PEER,getNeighboursURI("ip.txt"))
+    args_tuple = (SERVER_PEER,peers)
     
     t = threading.Thread(target=handleClient, args=args_tuple)
     t.start()
@@ -83,10 +90,10 @@ def main1():
         {
             SERVER_PEER: "peer"
         },
-        ns=False, host = HOST_IP, port= HOST_PORT)
+        ns=False, host = HOST_IP, port= int(HOST_PORT))
     
 
 if __name__ == "__main__": 
-    ips=getNeighboursURI(fname="ip.txt")
-    print(ips)
-    # main1()
+   # ip,port,peers=getNeighboursURI(fname="ip.txt")
+   # print(ip,port,peers)
+    main1()
