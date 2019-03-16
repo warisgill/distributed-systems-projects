@@ -19,7 +19,6 @@ be accessible. @Pyro4.expose decorator is used for this purpose.
  '''
 
 @Pyro4.expose
-@Pyro4.behavior(instance_mode="single")
 class Peer(object):
     def __init__(self):
         # print("> Peer Created.")
@@ -57,7 +56,7 @@ def getNeighboursURI(fname):
         if ip in addr:
            port = addr.split(":")[1]
            continue
-        peers_list.append("PYRO:peer@{0}".format(addr))
+        peers_list.append("PYRO:peer@"+addr)
     return (ip,port,peers_list)
 
 def broadCast(m,peers):
@@ -67,7 +66,7 @@ def broadCast(m,peers):
 def handleClient(PEER,neighbour_uris):
     FLAG = False
     neig_peers = []
-    print(neighbour_uris)
+    #print(neighbour_uris)
     while True:
         m = input()
         if FLAG == False:
@@ -83,7 +82,6 @@ def main1():
     HOST_IP,HOST_PORT,peers = getNeighboursURI("ip.txt")
     SERVER_PEER = Peer()
     args_tuple = (SERVER_PEER,peers)
-    
     t = threading.Thread(target=handleClient, args=args_tuple)
     t.start()
 
@@ -91,7 +89,7 @@ def main1():
         {
             SERVER_PEER: "peer"
         },
-        ns=False, host = HOST_IP, port= int(HOST_PORT))
+        ns=False,host=HOST_IP,port= 4444)
     
 
 if __name__ == "__main__": 
