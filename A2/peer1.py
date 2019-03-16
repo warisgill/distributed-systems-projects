@@ -89,7 +89,7 @@ def main1():
         {
             SERVER_PEER: "peer"
         },
-        ns=False,host=HOST_IP,port= 4444)
+        ns=False,host=HOST_IP,port= HOST_PORT)
     
 
 if __name__ == "__main__": 
