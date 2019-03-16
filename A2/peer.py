@@ -22,8 +22,10 @@ be accessible. @Pyro4.expose decorator is used for this purpose.
 class Peer(object):
     def __init__(self):
         # print("> Peer Created.")
-        self.timestamp = []
+        self.vector_timestamp = []
         self.id = 0
+        self.v_lock = threading.Lock()
+        self.buffer = []
     
     def greeting(self):
         return "Welcome"
@@ -35,13 +37,14 @@ class Peer(object):
         return m
 
     # neighbs will call this method to send me the message
-    def message(self,message):
+    def postMessage(self,message,vs,ids):
         print(">{0}".format(message))
 
+    def incrementTimeStamp(self):
+        with self.v_lock:
+            self.vector_timestamp[self.id] += 1
 
-
-
-# ============================== Client Handling ==================
+   # ============================== Client Handling ==================
 def getNeighboursURI(fname):  
     content = []
     peers_list = [] 
@@ -59,11 +62,15 @@ def getNeighboursURI(fname):
         peers_list.append("PYRO:peer@"+addr)
     return (ip,port,peers_list)
 
-def broadCast(m,peers,ip,port):
+def broadCast(server_peer,m,peers,ip,port):
+    server_peer.incrementTimeStamp()
     for peer in peers:
-        peer.message("{0}/{1} says: {2}".format(ip,port,m))
+        m = "{0}/{1} says: {2}".format(ip,port,m)
+        peer.postMessage(m,server_peer.vector_timestamp,server_peer.id)
 
-def handleClient(PEER,neighbour_uris,h_ip,h_port):
+    server_peer.updateBuffer(server_peer.vectortimestamp)
+
+def handleClient(server_peer,neighbour_uris,h_ip,h_port):
     FLAG = False
     neig_peers = []
     #print(neighbour_uris)
@@ -75,7 +82,7 @@ def handleClient(PEER,neighbour_uris,h_ip,h_port):
                 neig_peer = Pyro4.Proxy(uri)
                 neig_peers.append(neig_peer)
         
-        broadCast(m,neig_peers,h_ip,h_port)
+        broadCast(server_peer,m,neig_peers,h_ip,h_port)
         
 
 def main1():
