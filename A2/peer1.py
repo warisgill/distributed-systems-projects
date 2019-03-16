@@ -61,7 +61,7 @@ def getNeighboursURI(fname):
 
 def broadCast(m,peers):
     for peer in peers:
-        peer.message(HOST_IP + "/{0} says: {1}".format(HOST_PORT,m))
+        peer.message("{0}/{1} says: {2}".format(HOST_IP,HOST_PORT,m))
 
 def handleClient(PEER,neighbour_uris):
     FLAG = False
