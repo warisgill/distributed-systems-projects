@@ -59,11 +59,11 @@ def getNeighboursURI(fname):
         peers_list.append("PYRO:peer@"+addr)
     return (ip,port,peers_list)
 
-def broadCast(m,peers):
+def broadCast(m,peers,ip,port):
     for peer in peers:
-        peer.message("{0}/{1} says: {2}".format(HOST_IP,HOST_PORT,m))
+        peer.message("{0}/{1} says: {2}".format(ip,port,m))
 
-def handleClient(PEER,neighbour_uris):
+def handleClient(PEER,neighbour_uris,h_ip,h_port):
     FLAG = False
     neig_peers = []
     #print(neighbour_uris)
@@ -75,13 +75,13 @@ def handleClient(PEER,neighbour_uris):
                 neig_peer = Pyro4.Proxy(uri)
                 neig_peers.append(neig_peer)
         
-        broadCast(m,neig_peers)
+        broadCast(m,neig_peers,h_ip,h_port)
         
 
 def main1():
     HOST_IP,HOST_PORT,peers = getNeighboursURI("ip.txt")
     SERVER_PEER = Peer()
-    args_tuple = (SERVER_PEER,peers)
+    args_tuple = (SERVER_PEER,peers,HOST_IP,HOST_PORT)
     t = threading.Thread(target=handleClient, args=args_tuple)
     t.start()
 
