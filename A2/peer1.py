@@ -66,7 +66,8 @@ def broadCast(m,peers):
 
 def handleClient(PEER,neighbour_uris):
     FLAG = False
-    neig_peers = []    
+    neig_peers = []
+    print(neighbour_uris)
     while True:
         m = input()
         if FLAG == False:
