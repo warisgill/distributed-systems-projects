@@ -54,7 +54,7 @@ def getNeighboursURI(fname):
     
     for addr in content:
         if ip in addr:
-           port = addr.split(":")[1]
+           port = int(addr.split(":")[1])
            continue
         peers_list.append("PYRO:peer@"+addr)
     return (ip,port,peers_list)
@@ -89,7 +89,7 @@ def main1():
         {
             SERVER_PEER: "peer"
         },
-        ns=False,host=HOST_IP,port= int(HOST_PORT))
+        ns=False,host=HOST_IP,port= HOST_PORT)
     
 
 if __name__ == "__main__": 
