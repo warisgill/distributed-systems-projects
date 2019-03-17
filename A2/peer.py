@@ -57,6 +57,8 @@ class Peer(object):
             self.vector_timestamp[self.id] += 1
 
     def updateBuffer(self): # vr means here your own timestamp
+        if len(self.buffer) == 0:
+            return
         temp_buffer = []
         for i in range(0, len(self.buffer)):
             message,vs,ids = self.buffer[i]
