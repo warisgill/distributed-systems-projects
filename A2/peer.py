@@ -51,7 +51,7 @@ class Peer(object):
             self.updateBuffer()
         else:
             self.buffer.append((message,vs,ids))
-            print(">>Buffer Content After Addition : ", self.buffer)
+            print(">Buffer Content After Addition : ", self.buffer)
 
     def incrementTimeStamp(self):
         with self.v_lock:
@@ -67,14 +67,14 @@ class Peer(object):
             if self.checkRecv(vs,self.vector_clock,ids):
                 with self.v_lock:
                     self.vector_clock = vs            
-                print("*>>{0},<{1}>,<{2}>".format(message,self.vector_clock,ids))
+                print("*>{0},<{1}>,<{2}>".format(message,self.vector_clock,ids))
                 flag = True
             else:
                 temp_buffer.append((message,vs,ids))
 
         self.buffer = temp_buffer
         if flag == True:
-            print(">>Buffer Content After Removal : ", self.buffer)
+            print(">Buffer Content After Removal : ", self.buffer)
 
 
     def checkRecv(self, vs, vr, ids):
