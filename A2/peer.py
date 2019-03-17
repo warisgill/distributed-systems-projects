@@ -1,4 +1,5 @@
 from __future__ import print_function
+import sys
 import Pyro4
 import threading
 import socket
@@ -7,6 +8,7 @@ import socket
 HOST_IP = None  # Set accordingly (i.e. "192.168.1.99")
 HOST_PORT = None         # Set accordingly (i.e. 9876)
 
+sys.excepthook = Pyro4.util.excepthook
 
 # print(Pyro4.socketutil.getIpAddress())
 
@@ -38,6 +40,7 @@ class Peer(object):
 
     # neighbs will call this method to send me the message
     def postMessage(self,message,vs,ids):
+        #input("<debug input 1>")
         if self.checkRecv(vs,self.vector_timestamp,ids):
             
             with self.v_lock:
@@ -46,7 +49,7 @@ class Peer(object):
             print(">{0},<{1}>,<{2}>".format(message,self.vector_timestamp,ids))
             self.updateBuffer()
         else:
-            print("<Debug buffered: {0},{1},{2}>".format(message,vs,ids))
+            print("<Debug 2 postMessage buffered: {0},{1},{2}>".format(message,vs,ids))
             self.buffer.append((message,vs,ids))
 
     def incrementTimeStamp(self):
@@ -60,12 +63,12 @@ class Peer(object):
             if self.checkRecv(vs,self.vector_timestamp,ids):
                 with self.v_lock:
                     self.vector_timestamp = vs            
-                print(">Was Buffered:{0},<{1}>,<{2}>".format(message,self.vector_timestamp,ids))
+                print(">3 Was Buffered:{0},<{1}>,<{2}>".format(message,self.vector_timestamp,ids))
             else:
                 temp_buffer.append((message,vs,ids))
 
         self.buffer = temp_buffer
-        print("<Debug: Updated Buffer>", self.buffer)
+        print("<Debug 4: Updated Buffer>", self.buffer)
 
 
     def checkRecv(self, vs, vr, ids):
@@ -105,10 +108,11 @@ def getNeighboursURI(fname,server_peer):
 
 def broadCast(server_peer,m,peers,ip,port):
     server_peer.incrementTimeStamp() # increment timestap by one before broadcast
+    print(server_peer.vector_timestamp,server_peer.id)
     for peer in peers:
         m = "{0}/{1} says: {2}".format(ip,port,m)
         peer.postMessage(m,server_peer.vector_timestamp,server_peer.id)
-
+    print("<debug 1>")    
     server_peer.updateBuffer()
 
 def handleClient(server_peer,neighbour_uris,h_ip,h_port):
@@ -116,7 +120,7 @@ def handleClient(server_peer,neighbour_uris,h_ip,h_port):
     neig_peers = []
     #print(neighbour_uris)
     while True:
-        m = input()
+        m = input("Enter your message: ")
         if FLAG == False:
             FLAG = True
             for uri in neighbour_uris:
