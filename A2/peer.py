@@ -26,7 +26,7 @@ be accessible. @Pyro4.expose decorator is used for this purpose.
 class Peer(object):
     def __init__(self):
         # print("> Peer Created.")
-        self.vector_timestamp = []
+        self.vector_clock = []
         self.id = 0
         self.v_lock = threading.Lock()
         self.buffer = []
@@ -41,38 +41,40 @@ class Peer(object):
         return m
 
     # neighbs will call this method to send me the message
-    def postMessage(self,message,vs,ids):
-        
-        if self.checkRecv(vs,self.vector_timestamp,ids):
-            
+    def messagePost(self,message_object):
+        message,vs,ids = message_object
+        if self.checkRecv(vs,self.vector_clock,ids):
             with self.v_lock:
-                self.vector_timestamp = vs            
+                self.vector_clock = vs            
             
-            print(">{0},<{1}>,<{2}>".format(message,self.vector_timestamp,ids))
+            print(">{0},<{1}>,<{2}>".format(message,self.vector_clock,ids))
             self.updateBuffer()
         else:
-            # print("<Debug 2 postMessage buffered: {0},{1},{2}>".format(message,vs,ids))
             self.buffer.append((message,vs,ids))
+            print(">>Buffer Content After Addition : ", self.buffer)
 
     def incrementTimeStamp(self):
         with self.v_lock:
-            self.vector_timestamp[self.id] += 1
+            self.vector_clock[self.id] += 1
 
     def updateBuffer(self): # vr means here your own timestamp
         if len(self.buffer) == 0:
             return
         temp_buffer = []
+        flag = False
         for i in range(0, len(self.buffer)):
             message,vs,ids = self.buffer[i]
-            if self.checkRecv(vs,self.vector_timestamp,ids):
+            if self.checkRecv(vs,self.vector_clock,ids):
                 with self.v_lock:
-                    self.vector_timestamp = vs            
-                print("*>>{0},<{1}>,<{2}>".format(message,self.vector_timestamp,ids))
+                    self.vector_clock = vs            
+                print("*>>{0},<{1}>,<{2}>".format(message,self.vector_clock,ids))
+                flag = True
             else:
                 temp_buffer.append((message,vs,ids))
 
         self.buffer = temp_buffer
-        # print("<Debug 4: Updated Buffer>", self.buffer)
+        if flag == True:
+            print(">>Buffer Content After Removal : ", self.buffer)
 
 
     def checkRecv(self, vs, vr, ids):
@@ -100,7 +102,7 @@ def getNeighboursURI(fname,server_peer):
     content = [x.strip() for x in content]
     i = 0
     for addr in content:
-        server_peer.vector_timestamp.append(0)
+        server_peer.vector_clock.append(0)
         if ip in addr:
            server_peer.id = i 
            port = int(addr.split(":")[1])
@@ -111,11 +113,11 @@ def getNeighboursURI(fname,server_peer):
 
 def broadCast(server_peer,m,peers,ip,port):
     server_peer.incrementTimeStamp() # increment timestap by one before broadcast    
-    deep_v_timestamp = copy.deepcopy(server_peer.vector_timestamp)
+    deep_v_timestamp = copy.deepcopy(server_peer.vector_clock)
     for peer in peers:
         m = "{0}/{1} says: {2}".format(ip,port,m)
-        peer.postMessage(m,deep_v_timestamp,server_peer.id)
-        deep_v_timestamp = copy.deepcopy(server_peer.vector_timestamp)
+        peer.messagePost((m,deep_v_timestamp,server_peer.id))
+        deep_v_timestamp = copy.deepcopy(server_peer.vector_clock)
         time.sleep(20*server_peer.id)
     server_peer.updateBuffer()
 
@@ -123,6 +125,7 @@ def handleClient(server_peer,neighbour_uris,h_ip,h_port):
     FLAG = False
     neig_peers = []
     #print(neighbour_uris)
+    print("> Initial Vector Clock :", server_peer.vector_clock)
     while True:
         m = input()
         if FLAG == False:
@@ -136,7 +139,7 @@ def handleClient(server_peer,neighbour_uris,h_ip,h_port):
 
 def main1():
     SERVER_PEER = Peer()
-    HOST_IP,HOST_PORT,peers = getNeighboursURI("ip.txt",SERVER_PEER)
+    HOST_IP,HOST_PORT,peers = getNeighboursURI("peers.txt",SERVER_PEER)
     args_tuple = (SERVER_PEER,peers,HOST_IP,HOST_PORT)
     t = threading.Thread(target=handleClient, args=args_tuple)
     t.start()
