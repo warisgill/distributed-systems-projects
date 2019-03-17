@@ -40,7 +40,7 @@ class Peer(object):
 
     # neighbs will call this method to send me the message
     def postMessage(self,message,vs,ids):
-        #input("<debug input 1>")
+        
         if self.checkRecv(vs,self.vector_timestamp,ids):
             
             with self.v_lock:
@@ -110,11 +110,10 @@ def getNeighboursURI(fname,server_peer):
 
 def broadCast(server_peer,m,peers,ip,port):
     server_peer.incrementTimeStamp() # increment timestap by one before broadcast
-    print(server_peer.vector_timestamp,server_peer.id)
+    
     for peer in peers:
         m = "{0}/{1} says: {2}".format(ip,port,m)
         peer.postMessage(m,server_peer.vector_timestamp,server_peer.id)
-    print("<debug 1>")    
     server_peer.updateBuffer()
 
 def handleClient(server_peer,neighbour_uris,h_ip,h_port):
