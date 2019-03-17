@@ -6,9 +6,6 @@ import socket
 import copy
 import time
 
-#temp_ip = socket.gethostbyname(socket.gethostname())
-HOST_IP = None  # Set accordingly (i.e. "192.168.1.99")
-HOST_PORT = None         # Set accordingly (i.e. 9876)
 
 sys.excepthook = Pyro4.util.excepthook
 
@@ -30,15 +27,6 @@ class Peer(object):
         self.id = 0
         self.v_lock = threading.Lock()
         self.buffer = []
-    
-    def greeting(self):
-        return "Welcome"
-
-    def testing(self):
-        m = "No blocking"
-        # m = input(">Server\n", )
-        print(">Server result : +++ ", m)
-        return m
 
     # neighbs will call this method to send me the message
     def messagePost(self,message_object):
@@ -56,6 +44,7 @@ class Peer(object):
     def incrementTimeStamp(self):
         with self.v_lock:
             self.vector_clock[self.id] += 1
+        print("<Updated local clock {0}>\n".format(self.vector_clock))
 
     def updateBuffer(self): # vr means here your own timestamp
         if len(self.buffer) == 0:
@@ -111,8 +100,8 @@ def getNeighboursURI(fname,server_peer):
         i += 1
     return (ip,port,peers_list)
 
-def broadCast(server_peer,m,peers,ip,port):
-    server_peer.incrementTimeStamp() # increment timestap by one before broadcast    
+def multiCast(server_peer,m,peers,ip,port):
+    server_peer.incrementTimeStamp() # increment timestap by one before multiCast    
     deep_v_timestamp = copy.deepcopy(server_peer.vector_clock)
     for peer in peers:
         m = "{0}/{1} says: {2}".format(ip,port,m)
@@ -134,10 +123,10 @@ def handleClient(server_peer,neighbour_uris,h_ip,h_port):
                 neig_peer = Pyro4.Proxy(uri)
                 neig_peers.append(neig_peer)
         
-        broadCast(server_peer,m,neig_peers,h_ip,h_port)
+        multiCast(server_peer,m,neig_peers,h_ip,h_port)
         
 
-def main1():
+def main():
     SERVER_PEER = Peer()
     HOST_IP,HOST_PORT,peers = getNeighboursURI("peers.txt",SERVER_PEER)
     args_tuple = (SERVER_PEER,peers,HOST_IP,HOST_PORT)
@@ -152,6 +141,4 @@ def main1():
     
 
 if __name__ == "__main__": 
-   # ip,port,peers=getNeighboursURI(fname="ip.txt")
-   # print(ip,port,peers)
-    main1()
+    main()
