@@ -3,6 +3,7 @@ import sys
 import Pyro4
 import threading
 import socket
+import time
 
 #temp_ip = socket.gethostbyname(socket.gethostname())
 HOST_IP = None  # Set accordingly (i.e. "192.168.1.99")
@@ -79,7 +80,6 @@ class Peer(object):
                 if i != id:
                     if vs[i] > vr[i]:
                         return False
-
             return True  
 
         if vr[ids]+1 == vs[ids] and compare(vs,vr,ids):
@@ -113,6 +113,7 @@ def broadCast(server_peer,m,peers,ip,port):
     for peer in peers:
         m = "{0}/{1} says: {2}".format(ip,port,m)
         peer.postMessage(m,server_peer.vector_timestamp,server_peer.id)
+        time.sleep(60)
     server_peer.updateBuffer()
 
 def handleClient(server_peer,neighbour_uris,h_ip,h_port):
