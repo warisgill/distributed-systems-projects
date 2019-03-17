@@ -9,8 +9,8 @@ sys.excepthook = Pyro4.util.excepthook
 
 
 '''
-we have to tell Pyro what parts of the class should be remotely accessible, and what parts aren’t supposed to
-be accessible. @Pyro4.expose decorator is used for this purpose.
+    we have to tell Pyro what parts of the class should be remotely accessible, and what parts aren’t supposed to
+    be accessible. @Pyro4.expose decorator is used for this purpose.
  '''
 
 
