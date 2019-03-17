@@ -46,7 +46,8 @@ class Peer(object):
             self.updateBuffer()
         else:
             self.buffer.append((message,vs,ids))
-            print(">Buffer Content After Addition : ", self.buffer)
+            # print(">Buffer Content After Addition : ", self.buffer)
+            print("<<Buffer message: {0},{1},{2}>>".format(message,vs,ids))
 
     def incrementTimeStamp(self):
         """
