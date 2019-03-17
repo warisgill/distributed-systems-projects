@@ -143,7 +143,7 @@ class Peer(object):
             m = "{0}/{1} says: {2}".format(self.IP,self.PORT,message)
             peer.messagePost((m,deep_v_timestamp,self.ID))
             deep_v_timestamp = copy.deepcopy(self.vector_clock)
-            time.sleep(20*self.ID)
+            time.sleep(7*self.ID)
         self.updateBuffer()
 
     def handleInput(self):
