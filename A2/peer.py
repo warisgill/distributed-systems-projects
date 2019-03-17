@@ -51,7 +51,7 @@ class Peer(object):
             print(">{0},<{1}>,<{2}>".format(message,self.vector_timestamp,ids))
             self.updateBuffer()
         else:
-            print("<Debug 2 postMessage buffered: {0},{1},{2}>".format(message,vs,ids))
+            # print("<Debug 2 postMessage buffered: {0},{1},{2}>".format(message,vs,ids))
             self.buffer.append((message,vs,ids))
 
     def incrementTimeStamp(self):
@@ -67,12 +67,12 @@ class Peer(object):
             if self.checkRecv(vs,self.vector_timestamp,ids):
                 with self.v_lock:
                     self.vector_timestamp = vs            
-                print(">3 Was Buffered:{0},<{1}>,<{2}>".format(message,self.vector_timestamp,ids))
+                print("*>>{0},<{1}>,<{2}>".format(message,self.vector_timestamp,ids))
             else:
                 temp_buffer.append((message,vs,ids))
 
         self.buffer = temp_buffer
-        print("<Debug 4: Updated Buffer>", self.buffer)
+        # print("<Debug 4: Updated Buffer>", self.buffer)
 
 
     def checkRecv(self, vs, vr, ids):
