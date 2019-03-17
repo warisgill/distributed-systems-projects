@@ -3,6 +3,7 @@ import sys
 import Pyro4
 import threading
 import socket
+import copy
 import time
 
 #temp_ip = socket.gethostbyname(socket.gethostname())
@@ -110,9 +111,11 @@ def getNeighboursURI(fname,server_peer):
 
 def broadCast(server_peer,m,peers,ip,port):
     server_peer.incrementTimeStamp() # increment timestap by one before broadcast    
+    deep_v_timestamp = copy.deepcopy(server_peer.vector_timestamp)
     for peer in peers:
         m = "{0}/{1} says: {2}".format(ip,port,m)
-        peer.postMessage(m,server_peer.vector_timestamp,server_peer.id)
+        peer.postMessage(m,deep_v_timestamp,server_peer.id)
+        deep_v_timestamp = copy.deepcopy(server_peer.vector_timestamp)
         time.sleep(60)
     server_peer.updateBuffer()
 
