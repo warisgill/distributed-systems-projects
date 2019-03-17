@@ -42,7 +42,7 @@ class Peer(object):
             with self.v_lock:
                 self.vector_clock = vs            
             
-            print(">{0},<{1}>,<{2}>".format(message,self.vector_clock,ids))
+            print(">{0},<{1}>,<{2}>".format(message,vs,ids))
             self.updateBuffer()
         else:
             self.buffer.append((message,vs,ids))
@@ -140,10 +140,16 @@ class Peer(object):
         """
         self.incrementTimeStamp() # increment timestap by one before multiCast    
         deep_v_timestamp = copy.deepcopy(self.vector_clock)
+
+        # for 
+
+
+
+
         for peer in  self.n_peers:
             m = "{0}/{1} says: {2}".format(self.IP,self.PORT,message)
             peer.messagePost((m,deep_v_timestamp,self.ID))
-            deep_v_timestamp = copy.deepcopy(self.vector_clock)
+            # deep_v_timestamp = copy.deepcopy(self.vector_clock)
             time.sleep(7*self.ID)
         self.updateBuffer()
 
