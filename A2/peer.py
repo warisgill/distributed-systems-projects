@@ -109,8 +109,7 @@ def getNeighboursURI(fname,server_peer):
     return (ip,port,peers_list)
 
 def broadCast(server_peer,m,peers,ip,port):
-    server_peer.incrementTimeStamp() # increment timestap by one before broadcast
-    
+    server_peer.incrementTimeStamp() # increment timestap by one before broadcast    
     for peer in peers:
         m = "{0}/{1} says: {2}".format(ip,port,m)
         peer.postMessage(m,server_peer.vector_timestamp,server_peer.id)
@@ -121,7 +120,7 @@ def handleClient(server_peer,neighbour_uris,h_ip,h_port):
     neig_peers = []
     #print(neighbour_uris)
     while True:
-        m = input("Enter your message: ")
+        m = input()
         if FLAG == False:
             FLAG = True
             for uri in neighbour_uris:
