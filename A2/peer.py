@@ -100,14 +100,14 @@ def getNeighboursURI(fname,server_peer):
         i += 1
     return (ip,port,peers_list)
 
-def multiCast(server_peer,m,peers,ip,port):
+def multiCast(server_peer,message,peers,ip,port):
     server_peer.incrementTimeStamp() # increment timestap by one before multiCast    
     deep_v_timestamp = copy.deepcopy(server_peer.vector_clock)
     for peer in peers:
-        m = "{0}/{1} says: {2}".format(ip,port,m)
+        m = "{0}/{1} says: {2}".format(ip,port,message)
         peer.messagePost((m,deep_v_timestamp,server_peer.id))
         deep_v_timestamp = copy.deepcopy(server_peer.vector_clock)
-        # time.sleep(20*server_peer.id)
+        time.sleep(20*server_peer.id)
     server_peer.updateBuffer()
 
 def handleClient(server_peer,neighbour_uris,h_ip,h_port):
