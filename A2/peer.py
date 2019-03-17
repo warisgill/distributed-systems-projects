@@ -107,7 +107,7 @@ def multiCast(server_peer,m,peers,ip,port):
         m = "{0}/{1} says: {2}".format(ip,port,m)
         peer.messagePost((m,deep_v_timestamp,server_peer.id))
         deep_v_timestamp = copy.deepcopy(server_peer.vector_clock)
-        time.sleep(20*server_peer.id)
+        # time.sleep(20*server_peer.id)
     server_peer.updateBuffer()
 
 def handleClient(server_peer,neighbour_uris,h_ip,h_port):
