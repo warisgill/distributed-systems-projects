@@ -29,7 +29,7 @@ class Peer(object):
         self.predecssor_peer= None
         self.pred_addr = None
         self.Timer = None 
-        self.interval = 15
+        self.interval = 8
         self.lock_FT = threading.Lock()
         self.bug_flag = False
         # self.timer_flag = False
@@ -87,10 +87,7 @@ class Peer(object):
         print("(Succ Update: Pred ID = {0}, Own ID = {1}, Succ ID: {2})".format(self.predecssor_id, self.ID, self.successor_id))        
         if flag == -1:
            self.__periodicStabilization()
-        
-               
-        
-         
+              
     def updateFingerTable(self):
         keys = []
         flag = False
@@ -98,10 +95,10 @@ class Peer(object):
             for i in range(0,len(self.FT)):
                 key = (self.ID + 2**i ) % (2**self.num_bits)
                 keys.append(key)
-                ip,port,path,temp_id = self.lookup(key)
-                if self.FT[i] is None or self.FT[i][2] != temp_id:
+                ip,port,path,id = self.lookup(key)
+                if self.FT[i] is None or self.FT[i][2] != id:
                     flag = True
-                self.FT[i] = (ip,port,temp_id)
+                self.FT[i] = (ip,port,id)
 
         if flag == True:
             print("\n>Finger Table of Node {0}".format(self.ID))
@@ -126,7 +123,7 @@ class Peer(object):
             return self.FT[len(self.FT)-1]
         # add condition to check the keys values.
         # print("\n(Lookup at node :{0} for key {1}.)".format(self.ID,key))
-        temp = "<-N:{0}".format(self.ID)     
+        temp = "<-N{0}".format(self.ID)     
         if self.successor_id == -1 and self.predecssor_id == -1: # only 1 node in the system.
             # print("> I am responsible for key {0}".format(key))
             # print("(Lookup ended. 1)\n")
@@ -218,7 +215,8 @@ class Peer(object):
         # connecting to the correct successor in chord    
         self.successor_peer = self.connect(ip,port) 
         self.successor_id = self.successor_peer.getID()
-        self.FT[0] = (ip,port,self.successor_id)
+        with self.lock_FT:
+            self.FT[0] = (ip,port,self.successor_id)
         if self.successor_peer.getPredID() == -1: # if there is only 1 peer in the chord
             # setting connected node pred and succ
             self.successor_peer.setPred(self.ID,self.IP,self.PORT)
@@ -281,19 +279,32 @@ class Peer(object):
             lines = f.readlines()
         # print(lines)
         print(">Posting notes from the {0}.".format(fname))
+        lookup_times = []
+        lookup_paths = []
+        # lookup_keys  = []
         for line in lines: 
             note = line.split(':')
             # print(subject, self.dhtHash(subject))
             key = self.dhtHash(note[0])
+            
+            start = time.time()
             ip,port,path,id = self.lookup(key)
-            print(">Lookup:: Key = {0}, Path = {1}".format(key,path)) 
+            end = time.time()
+            t = end - start
+            lookup_times.append(round(t,4))
+            lookup_paths.append((key,path,len(path.split("<-"))-1))                
+            # print(">Lookup:: Key = {0}, Path = {1}".format(key,path)) 
             # print("I am ")           
-            print("Key = {0}, Subject: {1}, Body: {2}".format(key,note[0],note[1]))
+            # print("Key = {0}, Subject: {1}, Body: {2}".format(key,note[0],note[1]))
             if self.ID == id:
                 self.post(key,line)
             else:
                 peer = self.connect(ip,port)
                 peer.post(key,line)
+        
+        print("> Lookup Paths: ", lookup_paths)
+        print("> Time for {0} lookups.".format(len(lines)),lookup_times)
+
      
     def __handleRetrieveNote(self):
         sub = input("Enter the subject of Note:")
