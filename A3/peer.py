@@ -15,11 +15,11 @@ sys.excepthook = Pyro4.util.excepthook
 
 @Pyro4.expose
 class Peer(object):
-    def __init__(self,IP,PORT,daemon):
+    def __init__(self,IP,PORT,daemon,n_bits, intro_ip, intro_port):
         self.IP = IP
         self.PORT = PORT
         self.DAEMON =  daemon
-        self.num_bits = 6
+        self.num_bits = n_bits
         self.ID = self.dhtHash(self.IP + ":" + self.PORT)
         self.FT = [None] * self.num_bits # change it later
         self.NOTES_DICTIONARY = {}
@@ -32,6 +32,8 @@ class Peer(object):
         self.interval = 8
         self.lock_FT = threading.Lock()
         self.bug_flag = False
+        self.intro_ip = intro_ip
+        self.intro_port = intro_port
         # self.timer_flag = False
         print("> Own ID: {0}".format(self.ID))
 
@@ -322,11 +324,14 @@ class Peer(object):
         else: 
             print(">Retrieved Note: ", note[1])
     
-    def menu(self,connect_port):
+    def menu(self):
 
-        ip = socket.gethostbyname(socket.gethostname())
-        if connect_port != "None":
-            self.__handleJoin(ip,connect_port)
+        if self.intro_ip is None:
+            print(">Please select the 1 option to join chord")
+        else:
+            self.__handleJoin(self.intro_ip,self.intro_port)
+            print(">Congratulation you have joinded the chord.")    
+
         while True:
             print("\n   **** Chord Menu  ****")
             print("1. Join the Chord.")
@@ -369,25 +374,31 @@ class Peer(object):
  # roll 1
  #roll 2
 
-def main():    
+def main():
+    print("Please give command line argument in below 2 formats.")
+    print("1. python3 peer.py number_of_bits own_port introducer_ip introducer_port")    
+    print("2. python3 peer.py number_of_bits")
+    print("Warning: If you will not follow the above format process will not run")    
     ip = socket.gethostbyname(socket.gethostname())
-    port = None
-    if len(sys.argv)==1:
-        port =input("Enter PORT:")
-    else:
-        port = sys.argv[1]
-    # port = int(port)
-    custom_daemon = Pyro4.Daemon(host=ip,port= int(port))
-    
-    
-    PEER = Peer(ip,port,custom_daemon)
-    temp_port = None
-    if len(sys.argv) < 3:
-        temp_port = "None"
-    else:
-        temp_port = sys.argv[2]
+    num_bits = 128
+    port = "4000"
+    intro_ip = None
+    intro_port = None
 
-    t = threading.Thread(target=PEER.menu, args=(temp_port,))
+    if len(sys.argv) == 5:
+        num_bits = int(sys.argv[1])
+        port = sys.argv[2]
+        intro_ip = sys.argv[3]
+        intro_port = sys.argv[4]
+    elif len(sys.argv) == 2:
+        num_bits = int(sys.argv[1])
+    else:
+        print("command line args are incorrect.")
+        sys.exit() 
+
+    custom_daemon = Pyro4.Daemon(host=ip,port= int(port))
+    PEER = Peer(ip,port,custom_daemon,num_bits,intro_ip,intro_port)
+    t = threading.Thread(target=PEER.menu)
     t.start()
 
     Pyro4.Daemon.serveSimple({
