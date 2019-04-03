@@ -381,7 +381,7 @@ def main():
     print("Warning: If you will not follow the above format process will not run")    
     ip = socket.gethostbyname(socket.gethostname())
     num_bits = 128
-    port = "4000"
+    port = "4444"
     intro_ip = None
     intro_port = None
 
