@@ -1,0 +1,23 @@
+subject1:how are you 1.
+subject2:how are you 2.
+subject3:how are you 3.
+subject4:how are you 4.
+subject5:how are you 5.
+subject6:how are you 6.
+subject7:how are you 7.
+subject8:how are you 8.
+subject9:how are you 9.
+subject10:how are you 10.
+subject11:how are you 11.
+subject12:how are you 12.
+subject13:how are you 13.
+subject14:how are you 14.
+subject15:how are you 15.
+subject16:how are you 16
+subject17:how are you 17.
+subject18:how are you 18.
+subject19:how are you 19.
+subject20:how are you 20.
+subject1:repeat how are you 1.
+subject2:repeat how are you 2.
+subject3:repeat how are you 3.
