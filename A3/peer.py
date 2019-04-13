@@ -377,10 +377,10 @@ class Peer(object):
             lookup_times.append(round(t,4))
             lookup_paths.append((key,path,len(path.split("<-"))-1))
             if self.ID == id:
-                self.post(key,line)
+                self.post(key,line,self.ID)
             else:
                 peer = self.connect(ip,port)
-                peer.post(key,line)
+                peer.post(key,line,self.ID)
         
         print("> Lookup Paths: ", lookup_paths)
         print("> Time for {0} lookups.".format(len(lines)),lookup_times)
