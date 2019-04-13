@@ -164,13 +164,32 @@ class Peer(object):
         def distance(x,y):
             return abs(x-y) % (2**self.num_bits)  
         def findBestFTEntry(key):
-            if distance(key, self.ID) <= distance(self.FT[0][2],self.ID):
-                return self.FT[0]
             for i in range(0,len(self.FT)):
-                if distance(key, self.ID) <= distance(self.FT[i + 1][2], self.ID) or distance(key, self.ID) > distance(self.FT[i][2], self.ID):
+                if key >= self.FT[i][2] and key < self.FT[i + 1][2]:
                     return self.FT[i]
-            return self.FT[len(self.FT)-1]
+            
+            max1 = self.FT[0]
+            min1 = self.FT[0]
+            for i in range(1, len(self.FT)):
+                if self.FT[i][2] > max1[2]:
+                    max1 =  self.FT[i]
+                if self.FT[i][2] < min1[2]:
+                    min1 = self.FT[i]
+
+            if key >= max1[2]:
+                return self.FT[0] 
+            if key <= min1:
+               return self.FT[len(self.FT)-1]
+            else:
+                print(">>: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                return self.FT[0]
+
+
+                # if  <= distance(self.FT[i + 1][2], self.ID) or distance(key, self.ID) > distance(self.FT[i][2], self.ID):
+                #     return self.FT[i]
+                 
         temp = "<-N{0}".format(self.ID)     
+        
         if self.successor_id == -1 and self.predecessor_id == -1:
             return (self.IP, self.PORT,temp,self.ID)
         elif key > self.predecessor_id and key  <= self.ID:
