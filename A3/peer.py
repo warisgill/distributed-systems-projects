@@ -27,7 +27,7 @@ class Peer(object):
         self.NOTES_DICTIONARY = {}
         self.successor_id = -1
         self.successor_peer = None
-        self.predecssor_id = -1
+        self.predecessor_id = -1
         self.predecssor_peer= None
         self.pred_addr = None
         self.Timer = None 
@@ -39,136 +39,186 @@ class Peer(object):
         # self.timer_flag = False
         print("> Own ID: {0}".format(self.ID))
 
-    def dhtHash(self,s):
-        h = md5(s.encode())  
-        key = int(h.hexdigest(),16) % (2**self.num_bits)
+    def dhtHash(self, name):
+        """
+
+        :param name: variable whose hash has to be taken
+        :return: hash value of the name using md5
+        """
+        hash_of_name = md5(name.encode())
+        key = int(hash_of_name.hexdigest(),16) % (2**self.num_bits)
         return key
 
-    def connect(self,ip,port):
+    def connect(self, ip, port):
+        """
+
+        :param ip: IP of the peer to be connected to
+        :param port: PORT of the peer to be connected to
+        :return: object of the peer connected to
+        """
         uri = "PYRO:peer@"+ip+":"+port
         return Pyro4.Proxy(uri)
     
     def getID(self):
+        """
+
+        :return: ID of caller node
+        """
         return self.ID
 
     def getPredID(self):
-        return self.predecssor_id
+        """
+
+        :return: ID of caller's predecessor node
+        """
+        return self.predecessor_id
     
     def getPredAddress(self):
+        """
+
+        :return: IP, Port and ID of caller's predecessor node
+        """
         return self.pred_addr
 
     @Pyro4.oneway
-    def setPred(self,id,ip,port):
+    def setPred(self, id, ip, port):
+        """
+        This function sets the predecessor of the caller node and connects to it. If there is only one node in the
+        system then successor and predecessor of the caller node is set to -1
+
+        :param id: ID of the predecessor node
+        :param ip: IP of the predecessor node
+        :param port: PORT of the predecessor node
+        :return: None
+        """
         if id == self.ID:
             self.successor_id = -1
             self.successor_peer = None
-            self.predecssor_id = -1
+            self.predecessor_id = -1
             self.predecssor_peer = None
             self.Timer.cancel()
             return
-        self.predecssor_id = id
+        self.predecessor_id = id
         self.predecssor_peer = self.connect(ip,port) #Pyro4.Proxy(uri)
-        self.pred_addr = (self.predecssor_id,ip,port)
-        print("(Pred Update: Pred ID = {0}, Own ID = {1}, Succ ID: {2})".format(self.predecssor_id, self.ID, self.successor_id))
-        
-        
+        self.pred_addr = (self.predecessor_id,ip,port)
+        print("(Pred Update: Pred ID = {0}, Own ID = {1}, Succ ID: {2})".format(self.predecessor_id, self.ID, self.successor_id))
+
     @Pyro4.oneway
-    def setSucc(self,id,ip,port):
-        
+    def setSucc(self, id, ip, port):
+        """
+        This function sets the successor of the caller node and connects to it. If there is only one node in the
+        system then successor and predecessor of the caller node is set to -1. The finger table of the caller node is
+        also updated.
+
+        :param id: ID of the successor node
+        :param ip: IP of the successor node
+        :param port: PORT of the successor node
+        :return: None
+        """
         if id == self.ID:
             self.successor_id = -1
             self.successor_peer = None
-            self.predecssor_id = -1
+            self.predecessor_id = -1
             self.predecssor_peer = None
             self.Timer.cancel()
             return
         
         flag = self.successor_id
         self.successor_id = id
-        self.successor_peer = self.connect(ip,port)  #Pyro4.Proxy(uri)
+        self.successor_peer = self.connect(ip,port)
         with self.lock_FT:
-            self.FT[0] = (ip,port,id)
-        print("(Succ Update: Pred ID = {0}, Own ID = {1}, Succ ID: {2})".format(self.predecssor_id, self.ID, self.successor_id))        
+            self.FT[0] = (ip, port, id)
+        print("(Succ Update: Pred ID = {0}, Own ID = {1}, Succ ID: {2})".format(self.predecessor_id, self.ID, self.successor_id))        
         if flag == -1:
            self.__periodicStabilization()
               
     def updateFingerTable(self):
+        """
+        This function updates the finger table of the caller node
+        :return: flag suggesting that the finger table of the caller node is successfully updated
+        """
         keys = []
         flag = False
         with self.lock_FT:
-            for i in range(0,len(self.FT)):
+            for i in range(0, len(self.FT)):
                 key = (self.ID + 2**i ) % (2**self.num_bits)
                 keys.append(key)
-                ip,port,path,id = self.lookup(key)
+                ip, port, path, id = self.lookup(key)
                 if self.FT[i] is None or self.FT[i][2] != id:
                     flag = True
-                self.FT[i] = (ip,port,id)
+                self.FT[i] = (ip, port, id)
 
         if flag == True:
             print("\n>Finger Table of Node {0}".format(self.ID))
-            # print("Keys : {0}".format(keys))
             for i in range(0, len(self.FT)):
-                print("         {0} | {1}".format(i,self.FT[i][2]))
+                print("         {0} | {1}".format(i, self.FT[i][2]))
 
         return flag         
 
     def lookup(self,key):
+        """
+
+        :param key: key for which it's responsible node has to be found
+        :return: IPm PORT and ID of the node responsible for the key
+        """
         def distance(x,y):
             return abs(x-y) % (2**self.num_bits)  
         def findBestFTEntry(key):
             if distance(key, self.ID) <= distance(self.FT[0][2],self.ID):
-                # print(">Routed to FT entry successor {0}".format(self.FT[0][2]))
                 return self.FT[0]
             for i in range(0,len(self.FT)):
                 if distance(key, self.ID) <= distance(self.FT[i + 1][2], self.ID) or distance(key, self.ID) > distance(self.FT[i][2], self.ID):
-                    # print(">Routed to FT entry {0}".format(self.FT[i][2]))
                     return self.FT[i]
-            # print("> Routed to last FT entry: {0}".format(self.FT[len(self.FT)-1][2]))
             return self.FT[len(self.FT)-1]
-        # add condition to check the keys values.
-        # print("\n(Lookup at node :{0} for key {1}.)".format(self.ID,key))
         temp = "<-N{0}".format(self.ID)     
-        if self.successor_id == -1 and self.predecssor_id == -1: # only 1 node in the system.
-            # print("> I am responsible for key {0}".format(key))
-            # print("(Lookup ended. 1)\n")
+        if self.successor_id == -1 and self.predecessor_id == -1:
             return (self.IP, self.PORT,temp,self.ID)
-        elif key > self.predecssor_id and key  <= self.ID:
-            # print("> I am responsible for key {0}".format(key))
-            # print("(Lookup ended. 2)\n")
+        elif key > self.predecessor_id and key  <= self.ID:
             return (self.IP, self.PORT,temp,self.ID)
-        elif key > self.predecssor_id and self.predecssor_id > self.ID:
-            # print("> I am responsible for key {0}".format(key))
-            # print("(Lookup ended. 3)\n")                           
+        elif key > self.predecessor_id and self.predecessor_id > self.ID:
             return (self.IP, self.PORT,temp,self.ID)
-        elif key <= self.ID and self.predecssor_id > self.ID:
-            # print("> I am responsible for key {0}".format(key))
-            # print("(Lookup ended. 4)\n")
+        elif key <= self.ID and self.predecessor_id > self.ID:
             return (self.IP, self.PORT,temp,self.ID)    
         else:
-            # print("(Lookup 5 started.......... )\n")
             ip,port,id = findBestFTEntry(key)
             peer = self.connect(ip,port)
-            ip,port,path,temp_id  =   peer.lookup(key)            
-            # print("(Lookup ended. 5)\n")
+            ip,port,path,temp_id  =   peer.lookup(key)
             return (ip,port,temp+path,temp_id)
 
-    def post(self,key,note):
-        print("<<*Posting Note=>{0}, with key {1}, posted at node {2}.>>".format(note,key,self.ID))            
+    def post(self, key, note, poster_id):
+        """
+        This function stores the note in the caller NOTES_DICTIONARY. If it recieves a note with the same subject as it
+        already has, then it appends the new body with old body for that key
+        :param key: hash value of subject of the note
+        :param note: subject:body
+        :return: None
+        """
+        print("<< Poster ID: {0}, Posting Note: {1}, with key {2}, Posted at node {3}.>>".format(poster_id, note,
+                                                                                                 key, self.ID))
         note = note.split(":")
         if key in self.NOTES_DICTIONARY:
             subject,body, key = self.NOTES_DICTIONARY[key]
-            self.NOTES_DICTIONARY[key] = (subject, body + "||" + note[1].strip(), key)
+            self.NOTES_DICTIONARY[key] = (subject, note[1].strip() + " " + body, key)
         else:
             self.NOTES_DICTIONARY[key] = (note[0],note[1].strip(),key)
 
-
-    def get(self,key):
+    def get(self, key):
+        """
+        This function retrieves the body of the note for the given key
+        :param key: hash value of subject of the note
+        :return: NULL or the body of note related to key of the subject
+        """
         if key in self.NOTES_DICTIONARY:
             return self.NOTES_DICTIONARY[key]
         else: 
             return "NULL"        
 
-    def join(self,node_id):
+    def join(self, node_id):
+        """
+
+        :param node_id: ID of incoming node
+        :return: list of notes that should be shiftedd to the incoming node
+        """
         notes_list = []
         for key in self.NOTES_DICTIONARY.keys():
             if (key <= node_id and key > self.ID) or (key > node_id and key> self.ID):
@@ -180,28 +230,45 @@ class Peer(object):
         return notes_list
 
     def leave(self,notes_dict):
+        """
+        This fucntion recieves dictionary of notes from the leaving node and append to the caller node's NOTES
+
+        :param notes_dict: dictionary of notes recieved from the leaving node
+        :return: None
+        """
         print(">Notes Received from leaving node: {0}".format(len(notes_dict.keys())) )
         for key in notes_dict.keys():
             self.NOTES_DICTIONARY[key] = notes_dict[key]
             print(notes_dict[key])    
 
     def __periodicStabilization(self):
+        """
+        This function updates the finger table of the caller function and starts a Timer for periodiccally updating
+        the caller's finger table after fixed intervals
+        :return: None
+        """
         self.bug_flag = True
         flag = self.updateFingerTable()
         if flag == True:
             self.timer_flag = False
-            print("(Above FT is updated by timer)")
         self.Timer = threading.Timer(self.interval,self.__periodicStabilization)
         self.Timer.start()
     
-    def __handleJoin(self,ip,port):
-        # ip = input("Enter friend's IP")
-        bootstrap_peer = self.connect(ip,port) #Pyro4.Proxy(uri)
-        ip,port,path,temp_id = bootstrap_peer.lookup(self.ID) # (disconnect not handled)
+    def __handleJoin(self, ip, port):
+        """
+        This function connects the incoming node to the introducer node. Introducter node finds the successor the
+         incoming node in the system. Then it tries to updated the finger table of the new node, new node's successor
+         and new node's predecessor. Finally it checks if the new node's successor needs to send notes to the new node
+        :param ip: IP of the incoming node
+        :param port: PORT of the incoming node
+        :return: None
+        """
+        bootstrap_peer = self.connect(ip,port)
+        ip,port,path,temp_id = bootstrap_peer.lookup(self.ID)
         self.__handleJoinSetup(ip,port)
         self.__periodicStabilization()
 
-        if self.successor_id == self.predecssor_id:
+        if self.successor_id == self.predecessor_id:
             self.successor_peer.updateFingerTable()
         else:
             self.successor_peer.updateFingerTable()
@@ -210,40 +277,41 @@ class Peer(object):
         notes  = self.successor_peer.join(self.ID)    
         for note in notes:
             self.NOTES_DICTIONARY[note[2]] = note
-        print("Joined Setup: ( Pred ID = {0}, Own ID = {1}, Succ ID: {2})".format(self.predecssor_id,self.ID,self.successor_id))
+        print("Joined Setup: ( Pred ID = {0}, Own ID = {1}, Succ ID: {2})".format(self.predecessor_id,self.ID,self.successor_id))
         print(">Joining Completed.")
     
     def __handleJoinSetup(self,ip,port):
-        # connecting to the correct successor in chord    
+        """
+        This function connects the incoming node to it's successor and predecessor. It updates the predecessor of
+        incoming node's successor and the successor of the incoming node's predecessor
+        :param ip: IP of the incoming node
+        :param port: PORT of the incoming node
+        :return: None
+        """
         self.successor_peer = self.connect(ip,port) 
         self.successor_id = self.successor_peer.getID()
         with self.lock_FT:
             self.FT[0] = (ip,port,self.successor_id)
         if self.successor_peer.getPredID() == -1: # if there is only 1 peer in the chord
-            # setting connected node pred and succ
             self.successor_peer.setPred(self.ID,self.IP,self.PORT)
             self.successor_peer.setSucc(self.ID,self.IP,self.PORT)
-            # setting own succ and pred
-            self.predecssor_id = self.successor_id
+            self.predecessor_id = self.successor_id
             self.predecssor_peer= self.connect(ip,port) 
-            self.pred_addr = (self.predecssor_id,ip,port)
+            self.pred_addr = (self.predecessor_id,ip,port)
         else:
-            """
-            1. Get ip and port of succ pred. 2  Update its pred to yourself. 3. Set your pred id,ip,port to parent to id, ip, port got in 2nd step. 4. Ask your pred to update its succ to me
-            """
-            # step 1
-            id,ip,port = self.successor_peer.getPredAddress()             
-            # step 2
+            id,ip,port = self.successor_peer.getPredAddress()
             self.successor_peer.setPred(self.ID,self.IP,self.PORT)
-            # step 3
-            self.predecssor_id = id
+            self.predecessor_id = id
             self.predecssor_peer = self.connect(ip,port)
-            self.pred_addr = (self.predecssor_id,ip,port)            
-            # step 4
+            self.pred_addr = (self.predecessor_id,ip,port)
             self.predecssor_peer.setSucc(self.ID,self.IP,self.PORT)
-            
 
     def __handleLeave(self):
+        """
+        This function updates the predecessor and successor finger tables and their successor and predecessor
+        respectively. It also moves the notes of the leaving node to it's successor.
+        :return: None
+        """
         if self.successor_id != -1: 
             self.successor_peer.setPred(self.pred_addr[0],self.pred_addr[1],self.pred_addr[2])
             self.predecssor_peer.setSucc(self.FT[0][2],self.FT[0][0],self.FT[0][1])
@@ -257,6 +325,11 @@ class Peer(object):
         sys.exit()
 
     def __handleNoteInput(self):
+        """
+        This function takes the subject and body of note from user and looks up the key of the subject in the system.
+        It informs about the lookup path and it posts the note to the responsible node.
+        :return: None
+        """
         sub = input("Enter subject: ")
         body = input("Enter body: ")
         
@@ -267,26 +340,27 @@ class Peer(object):
         ip,port,path,id = self.lookup(key)
         print(">Lookup:: Key = {0}, Path = {1}".format(key,path))            
         if self.ID == id:
-            self.post(key,line)
+            self.post(key, line, self.ID)
         else:
             peer = self.connect(ip,port)
-            peer.post(key,line)
+            peer.post(key, line, self.ID)
 
-    
     def __handleReadNotesFromFile(self):
-        fname = "notes.txt"
-        # fname = input("Enter file name: ")
+        """
+        Th0is function takes the subject and body of note from the file and looks up the key of the subject in the system.
+        It informs about the lookup paths and it posts the notes to the responsible node. Additionally, it informs about
+        the time taken for lookup for each note.
+        :return: None
+        """
+        fname = "input.txt"
         lines = []
         with open(fname) as f:
             lines = f.readlines()
-        # print(lines)
         print(">Posting notes from the {0}.".format(fname))
         lookup_times = []
         lookup_paths = []
-        # lookup_keys  = []
         for line in lines: 
             note = line.split(':')
-            # print(subject, self.dhtHash(subject))
             key = self.dhtHash(note[0])
             
             start = time.time()
@@ -294,10 +368,7 @@ class Peer(object):
             end = time.time()
             t = end - start
             lookup_times.append(round(t,4))
-            lookup_paths.append((key,path,len(path.split("<-"))-1))                
-            # print(">Lookup:: Key = {0}, Path = {1}".format(key,path)) 
-            # print("I am ")           
-            # print("Key = {0}, Subject: {1}, Body: {2}".format(key,note[0],note[1]))
+            lookup_paths.append((key,path,len(path.split("<-"))-1))
             if self.ID == id:
                 self.post(key,line)
             else:
@@ -307,8 +378,11 @@ class Peer(object):
         print("> Lookup Paths: ", lookup_paths)
         print("> Time for {0} lookups.".format(len(lines)),lookup_times)
 
-     
     def __handleRetrieveNote(self):
+        """
+        This function gets user input for the subject for which the note is to be retrieved and looks up for that note.
+        :return: None
+        """
         sub = input("Enter the subject of Note:")
         key = self.dhtHash(sub.strip()) 
         ip,port,path,id = self.lookup(key)
@@ -325,7 +399,9 @@ class Peer(object):
             print(">Retrieved Note: ", note[1])
     
     def menu(self):
-
+        """
+        Display the possible actions of the user to perform on the system.
+        """
         if self.intro_ip is None:
             print(">Please select the 1 option to join chord")
         else:
@@ -348,7 +424,7 @@ class Peer(object):
             if n == "1":
                 ip = input("Enter friend's IP: ")
                 port = input("Enter friend's port: ")
-                self.__handleJoin(ip,port)
+                self.__handleJoin(ip, port)
             elif n == "2":
                 self.__handleLeave()
             elif n == "3":
@@ -373,9 +449,13 @@ class Peer(object):
 
 
 def main():
+    """
+    This is the beginning of the program, If you are first node then use format 1 to join the system, If you are the
+    second or any later node then you can use any format to join the system.
+    """
     print("Please give command line argument in below 2 formats.")
-    print("1. python3 peer.py number_of_bits own_port introducer_ip introducer_port")    
-    print("2. python3 peer.py number_of_bits")
+    print("1. python3 peer.py number_of_bits")
+    print("2. python3 peer.py number_of_bits own_port introducer_ip introducer_port")
     print("Warning: If you will not follow the above format process will not run")    
     ip = socket.gethostbyname(socket.gethostname())
     num_bits = 128
@@ -402,9 +482,10 @@ def main():
     Pyro4.Daemon.serveSimple({
             PEER: "peer"
         },
-        ns=False,daemon=PEER.DAEMON)
+        ns=False,
+        daemon=PEER.DAEMON
+    )
 
 if __name__ == "__main__":
-    #done  
     main()
 
