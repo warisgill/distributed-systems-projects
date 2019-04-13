@@ -219,15 +219,22 @@ class Peer(object):
         :param node_id: ID of incoming node
         :return: list of notes that should be shiftedd to the incoming node
         """
-        notes_list = []
+        send_notes_list = []
+        my_remaining_notes = {}
         for key in self.NOTES_DICTIONARY.keys():
-            if (key <= node_id and key > self.ID) or (key > node_id and key> self.ID):
-                notes_list.append(self.NOTES_DICTIONARY[key])
-        
-        for note in notes_list:
-            self.NOTES_DICTIONARY.pop(note[2])
+            if key > node_id and key  <= self.ID: # done
+                my_remaining_notes[key] =  self.NOTES_DICTIONARY[key]
+            elif key > node_id and node_id > self.ID:
+                my_remaining_notes[key] =  self.NOTES_DICTIONARY[key]
+            elif key <= self.ID and node_id > self.ID:
+                my_remaining_notes[key] =  self.NOTES_DICTIONARY[key]   
+            else:
+                send_notes_list.append(self.NOTES_DICTIONARY[key])
+
+        self.NOTES_DICTIONARY = my_remaining_notes
+        for note in send_notes_list:
             print(">Key Removed: ", note[2])
-        return notes_list
+        return send_notes_list
 
     def leave(self,notes_dict):
         """
