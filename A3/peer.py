@@ -392,8 +392,12 @@ class Peer(object):
         """
         sub = input("Enter the subject of Note:")
         key = self.dhtHash(sub.strip()) 
+        start = time.time()
         ip,port,path,id = self.lookup(key)
-        print(">Lookup:: Key = {0}, Path = {1}".format(key,path)) 
+        end = time.time()
+        t = end - start
+        # print("> Lookup Time")
+        print(">Lookup:: Key = {0}, Path = {1}, \n Lookup Time (sec) = {2}".format(key,path,t)) 
         note = None
         if id == self.ID:
             note = self.get(key)
