@@ -1,11 +1,13 @@
 from __future__ import print_function
-import sys
-import Pyro4
-import threading
+
 import socket
-import copy
+import sys
+import threading
 import time
 from hashlib import md5
+
+import Pyro4
+
 sys.excepthook = Pyro4.util.excepthook
 
 '''    
@@ -169,7 +171,7 @@ class Peer(object):
     def join(self,node_id):
         notes_list = []
         for key in self.NOTES_DICTIONARY.keys():
-            if (key <= node_id) or (key > node_id and key> self.ID):
+            if (key <= node_id and key > self.ID) or (key > node_id and key> self.ID):
                 notes_list.append(self.NOTES_DICTIONARY[key])
         
         for note in notes_list:
@@ -209,8 +211,6 @@ class Peer(object):
         for note in notes:
             self.NOTES_DICTIONARY[note[2]] = note
         print("Joined Setup: ( Pred ID = {0}, Own ID = {1}, Succ ID: {2})".format(self.predecssor_id,self.ID,self.successor_id))
-
-
         print(">Joining Completed.")
     
     def __handleJoinSetup(self,ip,port):
@@ -371,8 +371,6 @@ class Peer(object):
                 print(">>Error: Please select correct option.")
             print("           =========== ")
 
- # roll 1
- #roll 2
 
 def main():
     print("Please give command line argument in below 2 formats.")
