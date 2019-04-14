@@ -415,10 +415,10 @@ class Peer(object):
         ip,port,path,id = self.lookup(key)
         print(">Lookup:: Key = {0}, Path = {1}".format(key,path))            
         if self.ID == id:
-            self.post(key, line, self.ID)
+            self.post(key, line, str(self.ID))
         else:
             peer = self.connect(ip,port)
-            peer.post(key, line, self.ID)
+            peer.post(key, line, str(self.ID))
 
     def __handleReadNotesFromFile(self):
         """
@@ -445,10 +445,10 @@ class Peer(object):
             lookup_times.append(round(t,4))
             lookup_paths.append((key,path,len(path.split("<-"))-1))
             if self.ID == id:
-                self.post(key,line,self.ID)
+                self.post(key,line,str(self.ID))
             else:
                 peer = self.connect(ip,port)
-                peer.post(key,line,self.ID)
+                peer.post(key,line,str(self.ID))
         
         print("> Lookup Paths: ", lookup_paths)
         print("> Time for {0} lookups.".format(len(lines)),lookup_times)
