@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import copy
 import socket
 import sys
 import threading
@@ -41,7 +42,6 @@ class Peer(object):
 
     def dhtHash(self, name):
         """
-
         :param name: variable whose hash has to be taken
         :return: hash value of the name using md5
         """
@@ -51,7 +51,6 @@ class Peer(object):
 
     def connect(self, ip, port):
         """
-
         :param ip: IP of the peer to be connected to
         :param port: PORT of the peer to be connected to
         :return: object of the peer connected to
@@ -61,21 +60,18 @@ class Peer(object):
     
     def getID(self):
         """
-
         :return: ID of caller node
         """
         return self.ID
 
     def getPredID(self):
         """
-
         :return: ID of caller's predecessor node
         """
         return self.predecessor_id
     
     def getPredAddress(self):
         """
-
         :return: IP, Port and ID of caller's predecessor node
         """
         return self.pred_addr
@@ -85,7 +81,6 @@ class Peer(object):
         """
         This function sets the predecessor of the caller node and connects to it. If there is only one node in the
         system then successor and predecessor of the caller node is set to -1
-
         :param id: ID of the predecessor node
         :param ip: IP of the predecessor node
         :param port: PORT of the predecessor node
@@ -109,7 +104,6 @@ class Peer(object):
         This function sets the successor of the caller node and connects to it. If there is only one node in the
         system then successor and predecessor of the caller node is set to -1. The finger table of the caller node is
         also updated.
-
         :param id: ID of the successor node
         :param ip: IP of the successor node
         :param port: PORT of the successor node
@@ -155,41 +149,92 @@ class Peer(object):
 
         return flag         
 
+    # def lookup2(self,key):
+    #     """
+    #     :param key: key for which it's responsible node has to be found
+    #     :return: IP, PORT PATH and ID of the node responsible for the key
+    #     """
+    #     def succResponsible(key,myid,succID):
+    #         if key > myid and key  <= succID: # done
+    #             return True
+    #         elif key > myid and myid > succID:
+    #             return True
+    #         elif key <= succID and myid >succID:
+    #             return True
+    #         else:
+    #             return False
+
+    #     def distance(x,y):
+    #         return abs(x-y) % (2**self.num_bits)  
+        
+    #     def findBestFTEntry(key):
+    #         if distance(key, self.ID) <= distance(self.FT[0][2],self.ID):
+    #             return self.FT[0]
+    #         for i in range(0,len(self.FT)):
+    #             if distance(key, self.ID) <= distance(self.FT[i + 1][2], self.ID) or distance(key, self.ID) > distance(self.FT[i][2], self.ID):
+    #                 return self.FT[i]
+    #         return self.FT[len(self.FT)-1]
+    #     temp = "<-N{0}".format(self.ID)     
+    #     if self.successor_id == -1 and self.predecessor_id == -1:
+    #         return (self.IP, self.PORT,temp,self.ID)
+    #     elif key > self.predecessor_id and key  <= self.ID:
+    #         return (self.IP, self.PORT,temp,self.ID)
+    #     elif key > self.predecessor_id and self.predecessor_id > self.ID:
+    #         return (self.IP, self.PORT,temp,self.ID)
+    #     elif key <= self.ID and self.predecessor_id > self.ID:
+    #         return (self.IP, self.PORT,temp,self.ID)    
+    #     else:
+    #         ip,port,id = findBestFTEntry(key)
+    #         peer = self.connect(ip,port)
+    #         ip,port,path,temp_id  =   peer.lookup(key)
+    #         return (ip,port,temp+path,temp_id)
+
     def lookup(self,key):
         """
-
         :param key: key for which it's responsible node has to be found
-        :return: IPm PORT and ID of the node responsible for the key
+        :return: IP, PORT PATH and ID of the node responsible for the key
         """
-        def distance(x,y):
-            return abs(x-y) % (2**self.num_bits)  
-        def findBestFTEntry(key):
-            for i in range(0,len(self.FT)-1):
-                if key >= self.FT[i][2] and key < self.FT[i + 1][2]:
-                    return self.FT[i]
-            
-            max1 = self.FT[0]
-            min1 = self.FT[0]
-            for i in range(1, len(self.FT)):
-                if self.FT[i][2] > max1[2]:
-                    max1 =  self.FT[i]
-                if self.FT[i][2] < min1[2]:
-                    min1 = self.FT[i]
-
-            if key >= max1[2]:
-                return self.FT[0] 
-            if key <= min1:
-               return self.FT[len(self.FT)-1]
+        def succResponsible(key,myid,succID):
+            if key > myid and key  <= succID: # done
+                return True
+            elif key > myid and myid > succID:
+                return True
+            elif key <= succID and myid >succID:
+                return True
             else:
-                print(">>: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-                return self.FT[0]
+                return False
 
+        def findBestFTEntry(key):
 
-                # if  <= distance(self.FT[i + 1][2], self.ID) or distance(key, self.ID) > distance(self.FT[i][2], self.ID):
-                #     return self.FT[i]
-                 
+            def takeKey(f):
+                return f[2]
+
+            flag = True
+            for i in range(0,len(self.FT)-1):
+                if self.FT[i] is None or self.FT[i+1] is None:
+                    return self.FT[0]
+                if self.FT[i][2] > self.FT[i+1][2]: 
+                    flag = False
+                if self.FT[i][2] == key:
+                    return self.FT[i]
+                elif (self.FT[i][2] < key) and (key <  self.FT[i+1][2]) and flag:
+                    return self.FT[i]
+
+            if flag:
+                return self.FT[self.num_bits-1]
+
+            copiedFT = copy.deepcopy(self.FT)
+            copiedFT = sorted(copiedFT, key = takeKey)
+            # print(copiedFT)
+            for i in range(0, self.num_bits-1):
+                if copiedFT[i][2] == key:
+                    return copiedFT[i]
+                elif copiedFT[i][2] < key and key < copiedFT[i+1][2]:
+                    return copiedFT[i]  
+            
+            return copiedFT[self.num_bits-1]
+
         temp = "<-N{0}".format(self.ID)     
-        
         if self.successor_id == -1 and self.predecessor_id == -1:
             return (self.IP, self.PORT,temp,self.ID)
         elif key > self.predecessor_id and key  <= self.ID:
@@ -198,6 +243,12 @@ class Peer(object):
             return (self.IP, self.PORT,temp,self.ID)
         elif key <= self.ID and self.predecessor_id > self.ID:
             return (self.IP, self.PORT,temp,self.ID)    
+        elif succResponsible(key,self.ID, self.successor_id): 
+            # print("(Forwarding to Succ {})".format(self.successor_id))
+            ip,port,id = self.FT[0]
+            peer = self.connect(ip,port)
+            ip,port,path,temp_id  =   peer.lookup(key)
+            return (ip,port,temp+path,temp_id)
         else:
             ip,port,id = findBestFTEntry(key)
             peer = self.connect(ip,port)
@@ -234,7 +285,6 @@ class Peer(object):
 
     def join(self, node_id):
         """
-
         :param node_id: ID of incoming node
         :return: list of notes that should be shiftedd to the incoming node
         """
@@ -258,7 +308,6 @@ class Peer(object):
     def leave(self,notes_dict):
         """
         This fucntion recieves dictionary of notes from the leaving node and append to the caller node's NOTES
-
         :param notes_dict: dictionary of notes recieved from the leaving node
         :return: None
         """
@@ -416,7 +465,7 @@ class Peer(object):
         end = time.time()
         t = end - start
         # print("> Lookup Time")
-        print(">Lookup:: Key = {0}, Path = {1}, \n Lookup Time (sec) = {2}".format(key,path,t)) 
+        print(">Lookup:: Key = {0}, Path = {1}, \n Lookup Time (sec) = {2}".format(key,path,round(t,4))) 
         note = None
         if id == self.ID:
             note = self.get(key)
@@ -467,8 +516,14 @@ class Peer(object):
                 self.updateFingerTable()
             elif n == "7":
                 key = input("Enter key: ")
-                result =self.lookup(int(key))
-                print(">>Result : {0}".format(result))
+                # result =self.lookup()
+                start = time.time()
+                ip,port,path,id = self.lookup(int(key))
+                end = time.time()
+                t = end - start
+                # print("> Lookup Time")
+                print(">Lookup:: Key = {0}, Path = {1}, \n Lookup Time (sec) = {2}".format(key,path,round(t,4)))
+                # print(">>Result : {0}".format(result))
             elif n == "8":
                 print("\n>>Stored Notes:")
                 for key in self.NOTES_DICTIONARY:
@@ -488,8 +543,8 @@ def main():
     print("2. python3 peer.py number_of_bits own_port introducer_ip introducer_port")
     print("Warning: If you will not follow the above format process will not run")    
     ip = socket.gethostbyname(socket.gethostname())
-    num_bits = 128
-    port = "4444"
+    num_bits = 8
+    port = "5500"
     intro_ip = None
     intro_port = None
 
@@ -518,4 +573,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
