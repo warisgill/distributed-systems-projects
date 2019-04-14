@@ -543,8 +543,8 @@ def main():
     print("2. python3 peer.py number_of_bits own_port introducer_ip introducer_port")
     print("Warning: If you will not follow the above format process will not run")    
     ip = socket.gethostbyname(socket.gethostname())
-    num_bits = 8
-    port = "5500"
+    num_bits = 128
+    port = "4444"
     intro_ip = None
     intro_port = None
 
